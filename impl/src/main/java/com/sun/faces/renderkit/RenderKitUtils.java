@@ -41,6 +41,7 @@ import java.util.logging.Logger;
 
 import com.sun.faces.RIConstants;
 import com.sun.faces.application.ApplicationAssociate;
+import com.sun.faces.application.resource.ResourceHandlerImpl;
 import com.sun.faces.config.WebConfiguration;
 import com.sun.faces.el.ELUtils;
 import com.sun.faces.facelets.util.DevTools;
@@ -1717,7 +1718,7 @@ public class RenderKitUtils {
             writer.writeAttribute("type", ScriptRenderer.DEFAULT_CONTENT_TYPE, "type");
         }
 
-        String nonce = context.getApplication().getResourceHandler().getCurrentNonce(context);
+        String nonce = ResourceHandlerImpl.resolveCurrentNonce(context);
         if (nonce != null) {
             writer.writeAttribute("nonce", nonce, "nonce");
         }

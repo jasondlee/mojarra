@@ -38,7 +38,7 @@
     </context-param>
 
     <context-param>
-        <param-name>jakarta.faces.ENABLE_CSP_NONCE</param-name>
+        <param-name>com.sun.faces.enableCspNonce</param-name>
         <param-value>true</param-value>
     </context-param>
 </web-app>

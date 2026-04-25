@@ -125,6 +125,7 @@ import jakarta.faces.view.facelets.FaceletContext;
 import jakarta.servlet.http.HttpSession;
 
 import com.sun.faces.application.ApplicationAssociate;
+import com.sun.faces.application.resource.ResourceHandlerImpl;
 import com.sun.faces.config.WebConfiguration;
 import com.sun.faces.context.StateContext;
 import com.sun.faces.facelets.compiler.FaceletDoctype;
@@ -429,7 +430,7 @@ public class FaceletViewHandlingStrategy extends ViewHandlingStrategy {
                 }
 
                 // Add CSP header if necessary
-                String nonce = ctx.getApplication().getResourceHandler().getCurrentNonce(ctx);
+                String nonce = ResourceHandlerImpl.resolveCurrentNonce(ctx);
                 if (nonce != null) {
                     ctx.getExternalContext().addResponseHeader("Content-Security-Policy", evaluateCspHeader(ctx, nonce));
                 }

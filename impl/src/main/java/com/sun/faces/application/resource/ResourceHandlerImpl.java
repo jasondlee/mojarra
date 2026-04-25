@@ -61,6 +61,7 @@ import com.sun.faces.util.Util;
 
 import jakarta.faces.application.Resource;
 import jakarta.faces.application.ResourceHandler;
+import jakarta.faces.application.ResourceHandlerWrapper;
 import jakarta.faces.application.ResourceVisitOption;
 import jakarta.faces.context.ExternalContext;
 import jakarta.faces.context.FacesContext;
@@ -74,6 +75,23 @@ public class ResourceHandlerImpl extends ResourceHandler {
     private static final Logger LOGGER = FacesLogger.APPLICATION.getLogger();
 
     private static final String CURRENT_NONCE = ResourceHandlerImpl.class.getName() + ".currentNonce";
+
+    /**
+     * Mojarra-internal context parameter name to enable CSP nonce support.
+     * Backported from Jakarta Faces 5.0 {@code ResourceHandler#ENABLE_CSP_NONCE_PARAM_NAME}.
+     */
+    public static final String ENABLE_CSP_NONCE_PARAM_NAME = "com.sun.faces.enableCspNonce";
+
+    /**
+     * Mojarra-internal context parameter name to configure the Content-Security-Policy header template.
+     * Backported from Jakarta Faces 5.0 {@code ResourceHandler#CSP_POLICY_PARAM_NAME}.
+     */
+    public static final String CSP_POLICY_PARAM_NAME = "com.sun.faces.cspPolicy";
+
+    /**
+     * Default value for {@link #CSP_POLICY_PARAM_NAME}.
+     */
+    public static final String DEFAULT_CSP_POLICY = "script-src 'self' 'nonce-#{nonce}' 'strict-dynamic'";
 
     ResourceManager manager;
     List<Pattern> excludePatterns;
@@ -95,7 +113,7 @@ public class ResourceHandlerImpl extends ResourceHandler {
         manager = ApplicationAssociate.getInstance(extContext).getResourceManager();
         initExclusions(extContext.getApplicationMap());
         initMaxAge();
-        cspEnabled = webconfig.isSet(WebConfiguration.WebContextInitParameter.CspNonceEnabled);
+        cspEnabled = webconfig.isOptionEnabled(WebConfiguration.BooleanWebContextInitParameter.CspNonceEnabled);
         if (cspEnabled) {
             secureRandom = new SecureRandom();
             secureRandom.nextBytes(new byte[1]);
@@ -415,7 +433,24 @@ public class ResourceHandlerImpl extends ResourceHandler {
         ctx.getExternalContext().setResponseStatus(SC_NOT_MODIFIED);
     }
 
-    @Override
+    /**
+     * Resolves the current Mojarra {@link ResourceHandlerImpl} from the active resource handler chain
+     * and returns its current CSP nonce, or {@code null} if no Mojarra impl is reachable.
+     * Backported from Jakarta Faces 5.0 {@code ResourceHandler#getCurrentNonce(FacesContext)}.
+     */
+    public static String resolveCurrentNonce(FacesContext context) {
+        ResourceHandler handler = context.getApplication().getResourceHandler();
+        while (!(handler instanceof ResourceHandlerImpl)) {
+            if (handler instanceof ResourceHandlerWrapper) {
+                handler = ((ResourceHandlerWrapper) handler).getWrapped();
+            }
+            else {
+                return null;
+            }
+        }
+        return ((ResourceHandlerImpl) handler).getCurrentNonce(context);
+    }
+
     public String getCurrentNonce(FacesContext context) {
         if (cspEnabled) {
             var requestMap = context.getAttributes();
